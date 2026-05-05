@@ -1,0 +1,141 @@
+# 🔧 Problèmes rencontrés et analyse – Projet Terraform (VMware / Debian 12)
+
+## Contexte
+
+Ce projet a pour objectif de mettre en place un environnement automatisé de déploiement de machines virtuelles Debian 12 à l’aide de Terraform dans un contexte VMware Workstation.
+
+Au-delà de la mise en œuvre technique, ce document vise à présenter les principales difficultés rencontrées et la manière dont elles ont été analysées et résolues.
+
+
+
+## 1. Problème de configuration du provider VMware
+
+### Symptômes
+
+Lors de l’exécution des commandes :
+
+
+terraform plan
+terraform apply
+
+
+Plusieurs erreurs apparaissent :
+
+* `Missing required argument (endpoint)`
+* `Missing required argument (username)`
+* `Missing required argument (password)`
+* `Unsupported argument (vmx_path)`
+
+
+
+### Analyse
+
+Ces erreurs indiquent que :
+
+* le provider VMware (`vmworkstation`) nécessite une authentification via une API REST (VmREST)
+* les paramètres essentiels (endpoint, username, password) n’étaient pas définis
+* la configuration initiale du provider était incorrecte ou incomplète
+
+
+### Solution mise en place
+
+* activation manuelle du service VmREST (`vmrest.exe`)
+* compréhension du fonctionnement de l’API VMware Workstation
+* ajout de variables Terraform pour externaliser la configuration :
+
+
+variable "vmws_endpoint" {}
+variable "vmws_username" {}
+variable "vmws_password" {}
+
+* utilisation d’un fichier `terraform.tfvars` pour injecter les valeurs
+
+
+## 2. Problème de compréhension du fonctionnement du provider
+
+### Symptômes
+
+* difficulté à comprendre pourquoi Terraform ne parvenait pas à interagir avec VMware
+* confusion entre gestion locale des VMs et utilisation d’une API
+
+
+### Analyse
+
+Contrairement à d’autres providers (cloud), celui-ci :
+
+* repose sur une API locale (VmREST)
+* nécessite un service actif en arrière-plan
+* impose une configuration réseau spécifique (port, IP)
+
+
+### Solution
+
+* recherche documentaire (Terraform Registry, documentation provider)
+* compréhension du rôle de `vmrest.exe`
+* tests progressifs pour valider la connexion
+
+
+## 3. Gestion des chemins et environnement hôte
+
+### Symptômes
+
+* erreurs liées aux chemins `.vmx`
+* incompatibilités entre chemins Windows / Linux
+
+
+
+### Analyse
+
+Terraform dépend fortement :
+
+* de chemins absolus
+* du système hôte (Windows vs Linux)
+* de la cohérence des chemins entre template et clone
+
+
+
+### Solution
+
+* vérification systématique des chemins
+* adaptation des formats selon l’environnement
+* structuration plus propre des dossiers VMware
+
+
+## 4. Compréhension du cycle de vie Terraform
+
+### Difficultés
+
+* distinction entre `init`, `plan`, `apply`
+* compréhension du rôle du state
+
+
+### Apprentissage
+
+Ce projet m’a permis de comprendre :
+
+* `terraform init` → initialise les dépendances
+* `terraform plan` → prévisualise les actions
+* `terraform apply` → exécute les changements
+* importance du state pour suivre l’infrastructure
+
+
+## 5. Axes d’amélioration
+
+Pour aller plus loin, plusieurs évolutions sont envisagées :
+
+* automatisation du provisioning (Ansible)
+* déploiement de plusieurs VMs (lab multi-machines)
+* mise en place d’un scénario (attaque / défense)
+* migration vers un environnement cloud (AWS / Azure)
+* ajout de monitoring (observabilité)
+
+
+## Conclusion
+
+Ce projet m’a permis de dépasser une simple exécution de consignes pour :
+
+* comprendre le fonctionnement réel d’un outil d’Infrastructure as Code
+* analyser et corriger des erreurs techniques
+* développer une approche orientée résolution de problèmes
+
+Il constitue une première étape vers des environnements plus complexes en infrastructure et cloud.
